@@ -104,21 +104,30 @@ Kolam-Design-Principle-Analyzer/
 
 ## 📷 Sample Output
 
+
 ### Original Image
 
-(Add screenshot here)
+(home.png)
 
 ### Image Processing
 
-(Add screenshot here)
+(image processing.png)
+
+### Contours Image
+
+(contours.png)
 
 ### Digital Structural Reconstruction
 
-(Add screenshot here)
+(reconstruction.png)
+
+### Technologies Used
+
+(Technologies.png)
 
 ### Final Analysis Dashboard
 
-(Add screenshot here)
+(previous analysis.png)
 
 ---
 
