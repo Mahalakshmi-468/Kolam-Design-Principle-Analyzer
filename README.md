@@ -111,40 +111,29 @@ Kolam-Design-Principle-Analyzer/
 * Reconstruction Status
 
 ---
-
-## 📷 Sample Outputs
-
 ### 🏠 Home Page
-
----
+![Home](home.png)
 
 ### 🖼 Image Processing Results
-
----
+![Image Processing](processing.png)
 
 ### 📐 Contour Detection
-
----
+![Contours](contours.png)
 
 ### 🎨 Digital Structural Reconstruction
-
----
+![Reconstruction](screenshots/reconstruction.png)
 
 ### 📊 Analysis Visualization
-
----
+![Analysis Visualization](screenshots/Analysis%20visulation.png)
 
 ### ⚙️ Processing Workflow
-
----
+![Workflow](screenshots/workflow.png)
 
 ### 🛠 Technologies Used
-
----
+![Technologies](screenshots/Technologies.png)
 
 ### 📂 Previous Analysis
-
----
+![Previous Analysis](previous%20analysis.png)
 
 ## ▶️ How to Run
 
