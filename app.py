@@ -2,6 +2,8 @@ import streamlit as st
 import cv2
 import numpy as np
 import time
+import tempfile
+import os
 
 from image_processing import (
     convert_to_gray,
@@ -9,7 +11,8 @@ from image_processing import (
     detect_edges,
     detect_contours,
     detect_kolam_region,
-    detect_dots
+    detect_dots,
+    compare_with_recreation
 )
 
 from feature_extraction import (
@@ -27,6 +30,8 @@ from feature_extraction import (
 )
 
 from kolam_recreation import recreate_kolam
+from database import save_analysis, get_history, clear_history
+from report_generator import generate_pdf_report
 
 # ---------------------------------
 # Page Configuration
@@ -49,6 +54,30 @@ st.markdown("""
 """)
 
 st.success("✅ Upload a Kolam image to begin the analysis.")
+
+# ---------------------------------
+# Sidebar: Analysis History
+# ---------------------------------
+with st.sidebar:
+    st.header("📜 Analysis History")
+
+    history_df = get_history()
+
+    if history_df.empty:
+        st.info("No past analyses yet. Upload a Kolam image to get started.")
+    else:
+        st.dataframe(
+            history_df[[
+                "timestamp", "pattern", "dot_count",
+                "complexity", "confidence"
+            ]],
+            width='stretch',
+            hide_index=True
+        )
+
+        if st.button("🗑 Clear History"):
+            clear_history()
+            st.rerun()
 
 # ---------------------------------
 # Upload Image
@@ -233,6 +262,12 @@ if uploaded_file is not None:
     # -----------------------------
     
     recreated_kolam = recreate_kolam(dots)
+
+    # -----------------------------
+    # Original vs Recreated Difference Heatmap
+    # -----------------------------
+    diff_heatmap, match_score = compare_with_recreation(image, recreated_kolam)
+
     progress_bar.progress(100)
     status_text.success("✅ Analysis Completed Successfully!")
     # -----------------------------
@@ -304,7 +339,21 @@ if uploaded_file is not None:
         caption="Recreated Kolam",
         width='stretch'
         )
-    
+
+    st.subheader("🔥 Original vs Recreated — Difference Heatmap")
+    st.caption(
+        "Warmer colors (red/yellow) show where the recreated Kolam "
+        "diverges from the original's structure; cooler/darker areas "
+        "indicate a close match."
+    )
+
+    st.image(
+        diff_heatmap,
+        channels="BGR",
+        caption=f"Structural Match Score: {match_score}%",
+        width='stretch'
+    )
+
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -341,6 +390,12 @@ if uploaded_file is not None:
 
     with col10:
         st.metric("Recreation Status", status)
+
+    col11, col12 = st.columns(2)
+
+    with col11:
+        st.metric("Structural Match Score", f"{match_score}%")
+
     # -----------------------------
     # Final Report
     # -----------------------------
@@ -439,4 +494,76 @@ if uploaded_file is not None:
 
     Thank you for using the Kolam Design Principle Analyzer.
     """
+    )
+
+    # -----------------------------
+    # Save this analysis to history (SQLite)
+    # Uses the uploaded file's identity so each new upload gets saved
+    # exactly once, even though Streamlit reruns the script on every
+    # widget interaction.
+    # -----------------------------
+    file_signature = f"{uploaded_file.name}_{uploaded_file.size}"
+
+    if st.session_state.get("last_saved_signature") != file_signature:
+        save_analysis(
+            pattern=pattern,
+            design_style=design_style,
+            dot_count=dot_count,
+            contour_count=contour_count,
+            symmetry_level=symmetry_level,
+            similarity=round(similarity, 2),
+            complexity=complexity,
+            grid_size=grid_size,
+            difficulty=difficulty,
+            confidence=confidence,
+            match_score=match_score
+        )
+        st.session_state["last_saved_signature"] = file_signature
+
+    # -----------------------------
+    # Downloadable PDF Report
+    # -----------------------------
+    st.subheader("📥 Download Report")
+
+    report_metrics = {
+        "Pattern Type": pattern,
+        "Design Style": design_style,
+        "Detected Dots": dot_count,
+        "Contours Detected": contour_count,
+        "Grid Size": grid_size,
+        "Symmetry Level": symmetry_level,
+        "Similarity Score": f"{similarity:.2f}%",
+        "Complexity Score": f"{complexity}/100",
+        "Difficulty": difficulty,
+        "Drawing Method": drawing_method,
+        "Estimated Time": estimated_time,
+        "Confidence Score": f"{confidence}%",
+        "Structural Match Score": f"{match_score}%",
+        "Recreation Status": status,
+    }
+
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_pdf:
+        pdf_path = tmp_pdf.name
+
+    generate_pdf_report(
+        output_path=pdf_path,
+        images={
+            "original": image,
+            "recreated": recreated_kolam,
+            "difference": diff_heatmap
+        },
+        metrics=report_metrics,
+        principles=principles
+    )
+
+    with open(pdf_path, "rb") as f:
+        pdf_bytes = f.read()
+
+    os.remove(pdf_path)
+
+    st.download_button(
+        label="📄 Download PDF Analysis Report",
+        data=pdf_bytes,
+        file_name="kolam_analysis_report.pdf",
+        mime="application/pdf"
     )
