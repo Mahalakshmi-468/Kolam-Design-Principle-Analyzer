@@ -247,21 +247,21 @@ if uploaded_file is not None:
             image,
             channels="BGR",
             caption="Original Image",
-            use_container_width=True
+            width='stretch'
         )
 
     with col2:
         st.image(
             gray_image,
             caption="Grayscale Image",
-            use_container_width=True
+            width='stretch'
         )
 
     with col3:
         st.image(
             noise_removed,
             caption="Noise Removed",
-            use_container_width=True
+            width='stretch'
         )
 
     col4, col5, col6 = st.columns(3)
@@ -270,7 +270,7 @@ if uploaded_file is not None:
         st.image(
             edge_image,
             caption="Edge Detection",
-            use_container_width=True
+            width='stretch'
         )
 
     with col5:
@@ -278,7 +278,7 @@ if uploaded_file is not None:
             contour_image,
             channels="BGR",
             caption="Contours",
-            use_container_width=True
+            width='stretch'
         )
 
     with col6:
@@ -286,7 +286,7 @@ if uploaded_file is not None:
             dot_image,
             channels="BGR",
             caption="Detected Dots",
-            use_container_width=True
+            width='stretch'
         )
 
     # -----------------------------
@@ -302,7 +302,7 @@ if uploaded_file is not None:
         recreated_kolam,
         channels="BGR",
         caption="Recreated Kolam",
-        use_container_width=True
+        width='stretch'
         )
     
     col1, col2, col3 = st.columns(3)
