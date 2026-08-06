@@ -184,15 +184,86 @@ def _find_dots_with_mode(gray_image, mode):
 
 def detect_dots(gray_image):
 
-    # Try both polarities (dark dots on light background,
-    # and light dots on dark background) and keep whichever
-    # finds more valid dot-shaped blobs.
+    # First, try to find explicitly drawn filled dots (Pulli Kolam style)
     candidates = [
         _find_dots_with_mode(gray_image, cv2.THRESH_BINARY_INV),
         _find_dots_with_mode(gray_image, cv2.THRESH_BINARY),
     ]
 
-    return max(candidates, key=len)
+    best = max(candidates, key=len)
+
+    # Some Kolams (Sikku / Kambi style) don't have separately drawn
+    # dots at all — the design is a single continuous thread that
+    # loops around invisible grid points, forming enclosed diamond
+    # "eye" shapes instead. If no filled dots were found, fall back
+    # to detecting those enclosed loop cells and use their centers
+    # as the structural points instead.
+    if len(best) < 3:
+        loop_nodes = _detect_loop_nodes(gray_image)
+        if len(loop_nodes) > len(best):
+            return loop_nodes
+
+    return best
+
+
+def _detect_loop_nodes(gray_image):
+    """Detect the enclosed loop cells of a continuous-thread (Sikku)
+    Kolam and return their centers as (x, y, r) tuples, standing in
+    for the invisible grid points the design is built around."""
+
+    h, w = gray_image.shape[:2]
+    diag = float(np.sqrt(h ** 2 + w ** 2))
+
+    blur = cv2.GaussianBlur(gray_image, (3, 3), 0)
+
+    # The drawn thread is the brighter structure regardless of
+    # whether it's on a light or dark background: pick whichever
+    # polarity leaves the smaller foreground area (the thread is
+    # thin compared to the whole canvas).
+    _, thresh_a = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    _, thresh_b = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+    thresh = thresh_a if np.count_nonzero(thresh_a) < np.count_nonzero(thresh_b) else thresh_b
+
+    contours, hierarchy = cv2.findContours(
+        thresh,
+        cv2.RETR_CCOMP,
+        cv2.CHAIN_APPROX_SIMPLE
+    )
+
+    if hierarchy is None:
+        return []
+
+    min_area = diag * 0.01
+    max_area = diag * 3
+
+    nodes = []
+
+    for i, cnt in enumerate(contours):
+
+        area = cv2.contourArea(cnt)
+        parent = hierarchy[0][i][3]
+
+        # Only interested in "holes" (enclosed regions with a parent
+        # contour), which correspond to loop interiors, not the
+        # outer boundary of the whole thread.
+        if parent == -1:
+            continue
+
+        if area < min_area or area > max_area:
+            continue
+
+        M = cv2.moments(cnt)
+
+        if M["m00"] == 0:
+            continue
+
+        cx = int(M["m10"] / M["m00"])
+        cy = int(M["m01"] / M["m00"])
+
+        nodes.append((cx, cy, 3))
+
+    return nodes
 
 
 # ---------------------------------
