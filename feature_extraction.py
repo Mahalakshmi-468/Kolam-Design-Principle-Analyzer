@@ -39,6 +39,68 @@ def estimate_symmetry(gray_image):
 
 
 # -----------------------------
+# Full Symmetry Analysis
+# (Horizontal + Vertical + Rotational)
+# -----------------------------
+def _similarity_percent(gray_image, transformed):
+    difference = cv2.absdiff(gray_image, transformed)
+    return 100 - (
+        np.sum(difference)
+        / (gray_image.shape[0] * gray_image.shape[1] * 255)
+    ) * 100
+
+
+def estimate_full_symmetry(gray_image, threshold=85):
+    """Analyze horizontal, vertical, and 180-degree rotational
+    symmetry, and summarize the overall symmetry type.
+
+    Returns a dict with each axis's similarity percentage, whether it
+    passes the symmetry threshold, and an overall descriptive label
+    (e.g. "4-Fold Symmetric", "Bi-Axial Symmetric",
+    "Single-Axis Symmetric", "Asymmetric").
+    """
+
+    # Horizontal axis: mirror left-right (flip across the vertical
+    # center line)
+    horizontal_flip = cv2.flip(gray_image, 1)
+    horizontal_similarity = _similarity_percent(gray_image, horizontal_flip)
+
+    # Vertical axis: mirror top-bottom (flip across the horizontal
+    # center line)
+    vertical_flip = cv2.flip(gray_image, 0)
+    vertical_similarity = _similarity_percent(gray_image, vertical_flip)
+
+    # Rotational: 180-degree rotation about the center
+    rotated_180 = cv2.rotate(gray_image, cv2.ROTATE_180)
+    rotational_similarity = _similarity_percent(gray_image, rotated_180)
+
+    horizontal_pass = horizontal_similarity >= threshold
+    vertical_pass = vertical_similarity >= threshold
+    rotational_pass = rotational_similarity >= threshold
+
+    axes_passed = sum([horizontal_pass, vertical_pass, rotational_pass])
+
+    if horizontal_pass and vertical_pass and rotational_pass:
+        symmetry_type = "4-Fold Symmetric"
+    elif axes_passed == 2:
+        symmetry_type = "Bi-Axial Symmetric"
+    elif axes_passed == 1:
+        symmetry_type = "Single-Axis Symmetric"
+    else:
+        symmetry_type = "Asymmetric"
+
+    return {
+        "horizontal_similarity": round(horizontal_similarity, 2),
+        "vertical_similarity": round(vertical_similarity, 2),
+        "rotational_similarity": round(rotational_similarity, 2),
+        "horizontal_symmetric": horizontal_pass,
+        "vertical_symmetric": vertical_pass,
+        "rotational_symmetric": rotational_pass,
+        "symmetry_type": symmetry_type,
+    }
+
+
+# -----------------------------
 # Pattern Classification
 # -----------------------------
 def classify_pattern(dot_count, contour_count, similarity, complexity):
