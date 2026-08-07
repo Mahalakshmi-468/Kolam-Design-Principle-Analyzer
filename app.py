@@ -4,6 +4,7 @@ import numpy as np
 import time
 import tempfile
 import os
+import random
 
 from image_processing import (
     convert_to_gray,
@@ -18,6 +19,7 @@ from image_processing import (
 from feature_extraction import (
     count_contours,
     estimate_symmetry,
+    estimate_full_symmetry,
     classify_pattern,
     calculate_complexity,
     estimate_grid_size,
@@ -30,6 +32,7 @@ from feature_extraction import (
 )
 
 from kolam_recreation import recreate_kolam
+from kolam_generator import generate_kolam_design
 from database import save_analysis, get_history, clear_history
 from report_generator import generate_pdf_report
 
@@ -191,12 +194,83 @@ with st.sidebar:
             st.rerun()
 
 # ---------------------------------
-# Upload Image
+# Generate New Kolam Design (Generative Mode)
 # ---------------------------------
-uploaded_file = st.file_uploader(
-    "📁 Upload a Kolam Image",
-    type=["jpg", "jpeg", "png"]
+with st.expander("🪔 Generate a New Original Kolam Design", expanded=False):
+
+    st.caption(
+        "Procedurally create a brand-new Kolam pattern from a symmetric "
+        "dot grid, instead of analyzing an uploaded photo."
+    )
+
+    gen_col1, gen_col2, gen_col3 = st.columns(3)
+
+    with gen_col1:
+        gen_grid_size = st.slider("Grid Size (dots per side)", 5, 13, 7, step=2)
+
+    with gen_col2:
+        gen_symmetry_label = st.selectbox(
+            "Symmetry Mode",
+            ["4-Fold Symmetric", "2-Fold (Vertical Mirror)", "2-Fold (Horizontal Mirror)"]
+        )
+        gen_symmetry_map = {
+            "4-Fold Symmetric": "4-fold",
+            "2-Fold (Vertical Mirror)": "2-fold-vertical",
+            "2-Fold (Horizontal Mirror)": "2-fold-horizontal",
+        }
+        gen_symmetry = gen_symmetry_map[gen_symmetry_label]
+
+    with gen_col3:
+        gen_density = st.slider("Pattern Density", 0.2, 0.9, 0.55)
+
+    if st.button("✨ Generate New Kolam Design"):
+        st.session_state["gen_seed"] = random.randint(0, 999999)
+
+    if "gen_seed" not in st.session_state:
+        st.session_state["gen_seed"] = 42
+
+    generated_canvas, gen_dot_count, gen_edge_count = generate_kolam_design(
+        grid_size=gen_grid_size,
+        symmetry=gen_symmetry,
+        density=gen_density,
+        seed=st.session_state["gen_seed"]
+    )
+
+    with st.container(border=True):
+        st.markdown('<p class="card-title">🎨 Generated Kolam Design</p>', unsafe_allow_html=True)
+        st.image(generated_canvas, channels="BGR", width='stretch')
+        st.caption(f"{gen_dot_count} dots • {gen_edge_count} thread connections • {gen_symmetry_label}")
+
+    success, gen_png = cv2.imencode(".png", generated_canvas)
+
+    if success:
+        st.download_button(
+            label="📥 Download Generated Kolam (PNG)",
+            data=gen_png.tobytes(),
+            file_name="generated_kolam_design.png",
+            mime="image/png"
+        )
+
+st.markdown('<div class="kolam-divider"></div>', unsafe_allow_html=True)
+
+# ---------------------------------
+# Upload / Capture Image
+# ---------------------------------
+st.subheader("🔍 Analyze an Existing Kolam")
+
+input_mode = st.radio(
+    "Choose Input Method",
+    ["📁 Upload Image", "📷 Capture from Camera"],
+    horizontal=True
 )
+
+if input_mode == "📁 Upload Image":
+    uploaded_file = st.file_uploader(
+        "📁 Upload a Kolam Image",
+        type=["jpg", "jpeg", "png"]
+    )
+else:
+    uploaded_file = st.camera_input("📷 Capture a Kolam using your camera")
 
 # ---------------------------------
 # Process Image
@@ -318,6 +392,7 @@ if uploaded_file is not None:
     # Symmetry Detection
     # -----------------------------
     symmetry_level, similarity = estimate_symmetry(gray_image)
+    full_symmetry = estimate_full_symmetry(gray_image)
 
     progress_bar.progress(80)
     status_text.text("📏 Calculating symmetry...")
@@ -460,6 +535,38 @@ if uploaded_file is not None:
             caption=f"Structural Match Score: {match_score}%",
             width='stretch'
         )
+
+    st.subheader("🌀 Full Symmetry Analysis")
+    st.caption(
+        "Checks reflective symmetry across both axes plus 180° "
+        "rotational symmetry, and summarizes the overall symmetry type."
+    )
+
+    sym_col1, sym_col2, sym_col3, sym_col4 = st.columns(4)
+
+    with sym_col1:
+        st.metric(
+            "Horizontal Axis",
+            f"{full_symmetry['horizontal_similarity']}%",
+            "✔ Symmetric" if full_symmetry['horizontal_symmetric'] else "✘ Not Symmetric"
+        )
+
+    with sym_col2:
+        st.metric(
+            "Vertical Axis",
+            f"{full_symmetry['vertical_similarity']}%",
+            "✔ Symmetric" if full_symmetry['vertical_symmetric'] else "✘ Not Symmetric"
+        )
+
+    with sym_col3:
+        st.metric(
+            "180° Rotational",
+            f"{full_symmetry['rotational_similarity']}%",
+            "✔ Symmetric" if full_symmetry['rotational_symmetric'] else "✘ Not Symmetric"
+        )
+
+    with sym_col4:
+        st.metric("Overall Symmetry Type", full_symmetry['symmetry_type'])
 
     col1, col2, col3 = st.columns(3)
     
