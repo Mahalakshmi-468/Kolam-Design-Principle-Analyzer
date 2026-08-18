@@ -1,197 +1,155 @@
 # 🎨 Kolam Design Principle Analyzer
 
-## AI-Based Image Processing for Identifying Design Principles and Digital Structural Reconstruction of Traditional Tamil Kolams
+A computer-vision based web app for analyzing, recreating, and generating traditional **Tamil Kolam** designs. Upload a photo of a Kolam and the app will detect its dots and contours, classify its pattern type, score its symmetry and complexity, recreate it algorithmically, and export everything as a PDF report — or skip analysis entirely and generate a brand-new, original Kolam from a symmetric dot grid.
 
----
-
-## 📌 Project Overview
-
-The **Kolam Design Principle Analyzer** is a Computer Vision and Image Processing application developed using **Python, OpenCV, Streamlit, NumPy, Pandas, and SQLite**. The system analyzes traditional Tamil Kolam images by detecting dots, contours, symmetry, complexity, and design principles. It performs **Digital Structural Reconstruction** and presents the complete analysis through an interactive Streamlit dashboard.
-
-This project helps preserve the traditional Tamil Kolam art using modern Computer Vision techniques.
-
----
-
-## 🎯 Objectives
-
-* Analyze traditional Tamil Kolam images.
-* Detect Kolam dots and contours.
-* Identify design principles.
-* Estimate symmetry and complexity.
-* Classify Kolam patterns.
-* Perform Digital Structural Reconstruction.
-* Store analysis history using SQLite.
-* Display the complete analysis through Streamlit.
+Built with **Streamlit** and **OpenCV**.
 
 ---
 
 ## ✨ Features
 
-* 📷 Kolam Image Upload
-* 🎯 Kolam Region Detection
-* ⚫ Dot Detection
-* ✂ Edge Detection
-* 🔲 Contour Detection
-* 📐 Symmetry Analysis
-* 🧠 Pattern Classification
-* 📊 Complexity Calculation
-* 📍 Grid Size Estimation
-* 🎨 Digital Structural Reconstruction
-* 💾 SQLite Database Storage
-* 📈 Interactive Streamlit Dashboard
+### 🔍 Kolam Analysis
+- **Image preprocessing** — grayscale conversion, noise removal (Gaussian blur), and edge detection (Canny).
+- **Kolam region detection** — isolates the design from its background using adaptive (Otsu) thresholding.
+- **Dot detection** — locates the dot grid (Pulli) a Kolam is built around; for continuous-thread (Sikku/Kambi) designs with no visible dots, it falls back to detecting the enclosed loop "eyes" of the thread and uses those as structural points.
+- **Contour detection** — counts and overlays the design's line/curve contours.
+- **Symmetry analysis**
+  - Basic horizontal similarity score with a 3-tier rating (Highly / Moderately / Low Symmetric).
+  - Full symmetry breakdown across horizontal, vertical, and 180° rotational axes, summarized as 4-Fold, Bi-Axial, Single-Axis, or Asymmetric.
+- **Pattern classification** — categorizes the design as Sikku Kolam, Pulli Kolam, Straight Line Kolam, or Curved Kolam based on dot/contour counts, similarity, and complexity.
+- **Derived metrics** — complexity score, grid size estimate, design style, difficulty level, drawing method, and estimated drawing time.
+- **AI recreation** — rebuilds the Kolam from detected dots using a k-nearest-neighbor connection graph, rendered as smooth Bezier-curved threads.
+- **Original vs. recreated comparison** — generates a color difference heatmap and a structural match score between the uploaded photo and its recreation.
+- **Analysis history** — every analysis is saved to a local SQLite database and shown in the sidebar, with an option to clear history.
+- **PDF report export** — download a formatted report containing the original/recreated/heatmap images, full metrics table, and identified design principles.
+
+### 🪔 Kolam Generation
+- Procedurally generate a brand-new, original Kolam pattern from a symmetric dot grid (not derived from any uploaded image).
+- Configurable grid size, symmetry mode (4-fold, 2-fold vertical, or 2-fold horizontal mirror), and pattern density.
+- Download the generated design as a PNG.
+
+### 📷 Flexible Input
+- Upload an image file (JPG/JPEG/PNG) or capture one directly from your camera.
 
 ---
 
-## 🛠 Technologies Used
+## 🗂 Project Structure
 
-| Technology | Purpose               |
-| ---------- | --------------------- |
-| Python     | Programming Language  |
-| OpenCV     | Image Processing      |
-| Streamlit  | User Interface        |
-| NumPy      | Numerical Computation |
-| Pandas     | Data Handling         |
-| SQLite     | Database Storage      |
-
----
-
-## 📂 Project Structure
-
-```text
-Kolam-Design-Principle-Analyzer/
-│
-├── app.py
-├── image_processing.py
-├── feature_extraction.py
-├── kolam_recreation.py
-├── database.py
-├── requirements.txt
-├── README.md
-├── home.png
-├── processing.png
-├── contours.png
-├── previous analysis.png
-└── screenshots/
-    ├── reconstruction.png
-    ├── workflow.png
-    ├── Technologies.png
-    └── Analysis visulation.png
+```
+.
+├── app.py                  # Streamlit UI and main analysis pipeline
+├── image_processing.py     # Grayscale, noise removal, edges, contours, dot/region detection, diff heatmap
+├── feature_extraction.py   # Symmetry, pattern classification, complexity, difficulty, etc.
+├── kolam_recreation.py     # k-NN based Kolam recreation with curved thread rendering
+├── kolam_generator.py      # Procedural generation of new symmetric Kolam designs
+├── report_generator.py     # PDF report generation (ReportLab)
+├── database.py             # SQLite storage for analysis history
+└── kolam_history.db        # SQLite database (created automatically on first run)
 ```
 
 ---
 
-## 🔄 Project Workflow
+## 🛠 Tech Stack
 
-1. Upload Kolam Image
-2. Convert Image to Grayscale
-3. Remove Noise
-4. Detect Edges
-5. Detect Contours
-6. Detect Kolam Dots
-7. Extract Features
-8. Pattern Classification
-9. Digital Structural Reconstruction
-10. Store Results in SQLite Database
+| Purpose            | Library                     |
+|---------------------|------------------------------|
+| Web UI              | [Streamlit](https://streamlit.io/) |
+| Image processing    | [OpenCV](https://opencv.org/) (`opencv-python`) |
+| Numerical operations | NumPy |
+| Data handling        | pandas |
+| Database            | SQLite (via Python's built-in `sqlite3`) |
+| PDF reports         | [ReportLab](https://www.reportlab.com/) |
 
 ---
 
-## 📊 Analysis Parameters
+## 🚀 Getting Started
 
-* Pattern Type
-* Dot Count
-* Contour Count
-* Symmetry Level
-* Similarity Score
-* Complexity Score
-* Grid Pattern
-* Design Style
-* Drawing Method
-* Estimated Drawing Time
-* Confidence Score
-* Reconstruction Status
+### Prerequisites
+- Python 3.9+
 
----
-### 🏠 Home Page
-![Home](home.png)
-
-### 🖼 Image Processing Results
-![Image Processing](processing.png)
-
-### 📐 Contour Detection
-![Contours](contours.png)
-
-### 🎨 Digital Structural Reconstruction
-![Reconstruction](screenshots/reconstruction.png)
-
-### 📊 Analysis Visualization
-![Analysis Visualization](screenshots/Analysis%20visulation.png)
-
-### ⚙️ Processing Workflow
-![Workflow](screenshots/workflow.png)
-
-### 🛠 Technologies Used
-![Technologies](screenshots/Technologies.png)
-
-### 📂 Previous Analysis
-![Previous Analysis](previous%20analysis.png)
-
-## ▶️ How to Run
-
-### Clone the Repository
+### Installation
 
 ```bash
-git clone https://github.com/Mahalakshmi-468/Kolam-Design-Principle-Analyzer.git
+git clone <your-repo-url>
+cd <your-repo-folder>
+pip install streamlit opencv-python numpy pandas reportlab
 ```
 
-### Navigate to the Project Folder
-
-```bash
-cd Kolam-Design-Principle-Analyzer
-```
-
-### Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### Run the Application
+### Run the app
 
 ```bash
 streamlit run app.py
 ```
 
----
-
-## 💡 Future Enhancements
-
-* Deep Learning-Based Kolam Recognition
-* Automatic Kolam Generation
-* Mobile Application
-* Real-Time Camera Detection
-* Support for Multiple Regional Kolam Styles
-* Export Analysis Report as PDF
+The app will open in your browser at `http://localhost:8501`.
 
 ---
 
-## 👩‍💻 Developed By
 
-**Mahalakshmi M**
+## 🖼️ Screenshots
 
-**Register Number:** 922524244029
+The screenshots below document the project/application workflow and supporting work.  
+All images are stored in the [`screenshots/`](./screenshots/) folder so they render correctly when the repository is pushed to GitHub.
 
-**Department:** Computer Science and Business Systems
+### 🎨 Kolam Design Principle Analyzer
 
-**College:** V.S.B Engineering College (Autonomous)
+#### 1. Application Home & Input
+![Kolam Analyzer Home](./screenshots/11-kolam-analyzer-home.png)
+
+The main dashboard provides options to upload a Kolam image, capture one from a camera, or generate a new original Kolam design.
+
+#### 2. Image Processing Results
+![Kolam Image Processing Results](./screenshots/12-kolam-image-processing-results.png)
+
+The application displays the original image, grayscale conversion, and noise-removed output as part of the preprocessing pipeline.
+
+#### 3. Edge, Contour & Dot Detection
+![Kolam Edge Contours and Dots](./screenshots/13-kolam-edge-contours-dots.png)
+
+The processed output visualizes edge detection, detected contours, and the detected structural dots used for further analysis.
+
+### 📚 Supporting Course & Development Screenshots
+
 
 ---
 
-## 🙏 Acknowledgement
+## 📖 How It Works
 
-I sincerely thank the Department of Computer Science and Business Systems, V.S.B Engineering College (Autonomous), for providing continuous guidance, encouragement, and support throughout the development of this project.
+1. **Upload or capture** a Kolam image.
+2. The image is converted to **grayscale**, **denoised**, and passed through **Canny edge detection**.
+3. **Contours** and **dots** are detected and counted; if no explicit dots are found, the app looks for the enclosed loop shapes typical of continuous-thread Kolams instead.
+4. **Symmetry** is scored across horizontal, vertical, and rotational axes.
+5. These measurements feed into **pattern classification** (Sikku / Pulli / Straight Line / Curved), plus complexity, difficulty, grid size, and confidence scores.
+6. The detected dots are used to **recreate** the Kolam using a k-nearest-neighbor thread graph rendered with curved strokes.
+7. The original and recreated versions are compared structurally to produce a **difference heatmap** and **match score**.
+8. Results are displayed on an interactive dashboard, saved to the **analysis history**, and can be exported as a **PDF report**.
 
 ---
 
-## 📜 License
+## 📊 Metrics Explained
 
-This project is developed for academic and educational purposes only.
+| Metric | Description |
+|---|---|
+| **Pattern Type** | Classified Kolam style (Sikku / Pulli / Straight Line / Curved) |
+| **Design Style** | Human-readable style label derived from pattern type |
+| **Grid Size** | Estimated dot grid dimensions (`n x n`) |
+| **Symmetry** | Horizontal-flip similarity rating |
+| **Full Symmetry Type** | Combined horizontal/vertical/rotational symmetry classification |
+| **Complexity** | Score (0–100) based on dot and contour density |
+| **Difficulty** | Easy / Medium / Hard, derived from complexity |
+| **Confidence** | Weighted score combining similarity and complexity |
+| **Structural Match Score** | How closely the AI recreation matches the original's structure |
+
+---
+
+## 📝 Notes
+
+- Analysis history is stored locally in `kolam_history.db` (SQLite) and persists between sessions.
+- Generated PDF reports are created in a temporary file and streamed for download; they are not stored on disk afterward.
+- This project is intended for the study and appreciation of traditional Tamil Kolam art through computer vision.
+
+---
+
+## 🙏 Acknowledgements
+
+Inspired by the traditional Tamil art of **Kolam** — geometric line drawings created around a grid of dots, traditionally drawn by hand at the entrances of South Indian homes.
